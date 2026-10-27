@@ -27,7 +27,7 @@ test("health explicitly labels the service synthetic", async () => {
   assert.deepEqual(await response.json(), { status: "ok", synthetic: true });
 });
 
-test("catalogue returns the complete synthetic dataset and JSON headers", async () => {
+test("catalogue without a category returns the complete synthetic dataset and JSON headers", async () => {
   const response = await fetch(`${origin}/products`);
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^application\/json/);
@@ -35,6 +35,31 @@ test("catalogue returns the complete synthetic dataset and JSON headers", async 
   assert.equal(response.headers.get("cache-control"), "no-store");
   assert.deepEqual(await response.json(), { products });
   assert.ok(products.every((product) => Number.isInteger(product.priceCents) && product.priceCents > 0));
+});
+
+test("catalogue filters by each supported category in the original order", async () => {
+  for (const category of ["timber", "insulation", "masonry"]) {
+    const response = await fetch(`${origin}/products?category=${category}`);
+    assert.equal(response.status, 200, category);
+    assert.deepEqual(
+      await response.json(),
+      { products: products.filter((product) => product.category === category) },
+      category
+    );
+  }
+});
+
+test("catalogue rejects invalid category parameters", async () => {
+  for (const query of [
+    "category=unknown",
+    "category=",
+    "category=Timber",
+    "category=timber&category=insulation"
+  ]) {
+    const response = await fetch(`${origin}/products?${query}`);
+    assert.equal(response.status, 400, query);
+    assert.deepEqual(await response.json(), { error: "Invalid category" }, query);
+  }
 });
 
 test("a known product is returned by exact identifier", async () => {

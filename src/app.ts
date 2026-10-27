@@ -1,6 +1,8 @@
 import { createServer, type Server, type ServerResponse } from "node:http";
 import { products } from "./catalogue.js";
 
+const categories = ["timber", "insulation", "masonry"];
+
 function json(response: ServerResponse, status: number, body: unknown): void {
   response.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
@@ -32,6 +34,17 @@ export function createApp(): Server {
     }
 
     if (url.pathname === "/products") {
+      const requestedCategories = url.searchParams.getAll("category");
+      if (requestedCategories.length > 0) {
+        if (requestedCategories.length !== 1 || !categories.includes(requestedCategories[0] ?? "")) {
+          json(response, 400, { error: "Invalid category" });
+          return;
+        }
+        json(response, 200, {
+          products: products.filter((product) => product.category === requestedCategories[0])
+        });
+        return;
+      }
       json(response, 200, { products });
       return;
     }
