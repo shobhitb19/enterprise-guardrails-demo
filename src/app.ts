@@ -1,4 +1,6 @@
 import { createServer, type Server, type ServerResponse } from "node:http";
+import { readFile } from "node:fs";
+import { join } from "node:path";
 import { products } from "./catalogue.js";
 
 function json(response: ServerResponse, status: number, body: unknown): void {
@@ -33,6 +35,20 @@ export function createApp(): Server {
 
     if (url.pathname === "/products") {
       json(response, 200, { products });
+      return;
+    }
+
+    // Intentionally vulnerable, isolated security demonstration. Never merge or deploy.
+    if (url.pathname === "/demo-document") {
+      const requestedDocument = request.headers["x-demo-document"];
+      const filename = typeof requestedDocument === "string" ? requestedDocument : "sample.txt";
+      readFile(join(process.cwd(), "demo-documents", filename), "utf8", (error, content) => {
+        if (error) {
+          json(response, 404, { error: "Document unavailable" });
+          return;
+        }
+        json(response, 200, { content });
+      });
       return;
     }
 
