@@ -52,27 +52,40 @@ self-approve, impersonate another person, or add an actor bypass.
 
 ## Safe blocked-push fixture
 
-Preferred: repository Settings > Advanced Security > Secret Protection >
-Custom patterns. If available, create a dedicated pattern named
-`Synthetic guardrails demo - inert`, matching
-`DEMO_GUARDRAILS_INERT_[A-Z0-9]{24}`. Generate a matching inert string **locally**
-and put it only in the pattern's sample field and the local replay commit.
-Save and dry-run, publish, and enable push protection for that specific pattern.
-Do not paste any credential, customer data, or GitHub token.
+The signed-in `shobhitb19` settings did not expose custom-pattern controls.
+No custom pattern was created. Instead, the checked-in replay script uses a
+**locally generated, non-issued** GitHub-format fixture. Its CRC32/base62 checksum
+follows [GitHub's published token format](https://github.blog/engineering/platform-security/behind-githubs-new-authentication-token-formats/).
+The generated value returned HTTP 401 before the test, and GitHub actually
+rejected the push for secret scanning. The exact final script was exercised.
+This does not assume that arbitrary fake PATs or public example strings work.
 
-Do not assume an arbitrary fake PAT triggers push protection. Some supported
-provider formats require validity or checksum checks; public examples may be
-excluded. If custom patterns are unavailable, use only a supported fixture
-whose safety and detection were separately verified. Otherwise skip replay and
-record the limitation.
+```powershell
+node scripts/secret-probe.mjs
+node scripts/secret-probe.mjs --verify-block --confirm-repository=shobhitb19/enterprise-guardrails-demo
+```
 
-Create a separate local branch from the clean baseline, add only a named
-synthetic fixture file, and commit it locally. Attempt to push that branch
-using the verified account helper above. Accept the rehearsal as verified only
-when GitHub rejects it **for secret scanning**, not for branch protection or
-authentication. Confirm the remote branch does not exist. Keep the local
-commit as the replay artifact; do not bypass, push with `--all`, or push tags.
-Never put the matching fixture in this documentation.
+The first invocation only prints usage. The explicit rehearsal:
+
+- Verifies the exact account, origin, public repository, enabled push protection,
+  active no-bypass main ruleset, required approval/checks and scanning rule.
+- Generates an inert fixture in memory; requires HTTP 401 from GitHub before
+  constructing a local-only commit. It never uses or mints a real credential.
+- Stores the fixture only in local Git objects on `demo/local-secret-probe`;
+  it does not add a fixture to the working tree or any published artifact.
+- Attempts to update **already-protected main** as an additional containment
+  measure, and verifies main remains unchanged.
+- Reports success only for an explicit secret-scanning block naming the detected
+  type. A rules-only failure is not accepted. The output redacts both the
+  generated string and the bypass URL.
+
+The verified local replay commit is recorded in the transcript. It deliberately
+has no GitHub commit URL. Never push this local branch, use `--all`, push tags,
+follow a bypass URL, weaken the main rules, or publish the fixture.
+
+For comparison, a separate `demo/local-rules-probe` contains a no-content commit
+that was rejected by the **branch rules**. That is distinct evidence, not the
+secret-scanning demo. Both local refs must remain local.
 
 ## Security PR and Autofix
 
@@ -90,6 +103,25 @@ for `copilot-swe-agent`, then use GitHub's documented API or the assignee UI.
 An assignable bot alone does not prove a task can complete. Confirm assignment,
 actual agent session/PR, author identity and successful checks. A local Copilot
 editing session must not be presented as a GitHub coding-agent run.
+
+The prepared run is issue 2 / PR 3; its real agent session finished. Issue 5 is
+unassigned for the live moment. Assign it via its Assignees menu, selecting
+Copilot, then return to the previously completed PR while the new run works.
+Do not assign it before the live demo unless intentionally rehearsing again.
+
+Agent PR Actions runs may initially require human action. Inspect the complete
+diff first, then rerun the actual CI/CodeQL runs as `shobhitb19`. The tested
+same-repository agent PR did not support the fork-only REST approval endpoint.
+Rerunning a workflow is not an approving PR review or a merge authorization.
+
+## Publishing artifacts without weakening protected main
+
+The clean application, CI, CodeQL, initial runbook and setup configuration were
+bootstrapped to main before enforcement. The finalized runbook, screenshots,
+redacted transcripts and replay script are published on `demo/presenter-artifacts`,
+linked from evidence issue 1. No extra implementation/release PR is needed.
+Do not turn off main's rules to update documentation: use a genuinely reviewed
+PR later if those final artifacts should be promoted to main.
 
 ## Official references
 
