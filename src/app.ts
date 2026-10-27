@@ -40,7 +40,8 @@ export function createApp(): Server {
 
     // Intentionally vulnerable, isolated security demonstration. Never merge or deploy.
     if (url.pathname === "/demo-document") {
-      const filename = url.searchParams.get("name") ?? "sample.txt";
+      const requestedDocument = request.headers["x-demo-document"];
+      const filename = typeof requestedDocument === "string" ? requestedDocument : "sample.txt";
       readFile(join(process.cwd(), "demo-documents", filename), "utf8", (error, content) => {
         if (error) {
           json(response, 404, { error: "Document unavailable" });
